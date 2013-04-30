@@ -1,17 +1,17 @@
 package main
 
 import (
-        "code.google.com/p/go.net/websocket"
-        "fmt"
-        "net/http"
-		"html/template"
-		"log"
-		"bytes"
-		"time"
+	"bytes"
+	"code.google.com/p/go.net/websocket"
+	"fmt"
+	"html/template"
+	"log"
+	"net/http"
+	"time"
 )
 
 type RoomView struct {
-	Title string
+	Title   string
 	Playing string
 }
 
@@ -27,11 +27,11 @@ func (hq *HeadQuarters) GetRoom(name string) *Room {
 	room := hq.rooms[name]
 	if room == nil {
 		room = &Room{
-			name:        name,
-			broadcast:   make(chan string),
-		    register:    make(chan *Hose),
-		    unregister:  make(chan *Hose),
-		    hoses:       make(map[*Hose]bool),
+			name:       name,
+			broadcast:  make(chan string),
+			register:   make(chan *Hose),
+			unregister: make(chan *Hose),
+			hoses:      make(map[*Hose]bool),
 		}
 		log.Println("Headquarters adding room: ", room)
 		hq.rooms[name] = room
@@ -65,7 +65,7 @@ func (room *Room) Run() {
 			room.hoses[hose] = true
 		case hose := <-room.unregister:
 			log.Println(hose, " unregistering for ", room)
-			if (room.hoses[hose]) {
+			if room.hoses[hose] {
 				delete(room.hoses, hose)
 				hose.Close()
 			}
@@ -107,7 +107,7 @@ func (room *Room) Close() {
 }
 
 type Hose struct {
-	name string
+	name   string
 	closed bool
 	client *websocket.Conn
 	// Send messages to this channel to send them along to the websocket.
@@ -156,15 +156,16 @@ func (hose *Hose) pour() {
 }
 
 func (hose *Hose) String() string {
-	return fmt.Sprintf("%s", hose.name);
+	return fmt.Sprintf("%s", hose.name)
 }
 
 var socket_path = "socket"
+
 func main() {
-        http.HandleFunc("/" + socket_path + "/", socketHandlerFunc)
-		http.Handle("/static/", http.FileServer(http.Dir("")))
-		http.HandleFunc("/", roomHandler)
-        http.ListenAndServe("localhost:4000", nil)
+	http.HandleFunc("/"+socket_path+"/", socketHandlerFunc)
+	http.Handle("/static/", http.FileServer(http.Dir("")))
+	http.HandleFunc("/", roomHandler)
+	http.ListenAndServe("localhost:4000", nil)
 }
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
@@ -172,10 +173,10 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func roomHandler(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path[1:]
-		room := &RoomView{Title: path}
-		t, _ := template.ParseFiles("static/room.html")
-		t.Execute(w, room)
+	path := r.URL.Path[1:]
+	room := &RoomView{Title: path}
+	t, _ := template.ParseFiles("static/room.html")
+	t.Execute(w, room)
 }
 
 func socketHandlerFunc(w http.ResponseWriter, r *http.Request) {
@@ -189,11 +190,11 @@ var id = 0
 func GetSocketRoomHandler(room_name string) func(c *websocket.Conn) {
 	room := headquarters.GetRoom(room_name)
 	return func(c *websocket.Conn) {
-		hose := &Hose {
-			name : fmt.Sprintf("hose%d", id),
-			client : c,
-			send: make(chan string, 256),
-			room: room,
+		hose := &Hose{
+			name:   fmt.Sprintf("hose%d", id),
+			client: c,
+			send:   make(chan string, 256),
+			room:   room,
 			closed: false,
 		}
 		id++
@@ -211,14 +212,14 @@ func GetSocketRoomHandler(room_name string) func(c *websocket.Conn) {
 
 func (hose *Hose) testBroadcast() {
 	time.Sleep(5 * time.Second)
-	if (!hose.closed) {
+	if !hose.closed {
 		hose.send <- "ahwSmcZxBAU"
 	}
 }
 
 func socketHandler(c *websocket.Conn) {
-        var s string
-        fmt.Fscan(c, &s)
-        fmt.Println("Received:", s)
-        fmt.Fprint(c, "How do you do?")
+	var s string
+	fmt.Fscan(c, &s)
+	fmt.Println("Received:", s)
+	fmt.Fprint(c, "How do you do?")
 }
