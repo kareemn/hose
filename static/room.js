@@ -55,7 +55,8 @@ function MainSocketLoop() {
         var payload = message.data;
         console.log("Message is received...");
 		console.log(payload);
-		player.loadVideoById(payload)
+		object = JSON.parse(payload)
+		player.loadVideoById(object['id'])
      };
 
      ws.onclose = function() { 
@@ -83,8 +84,8 @@ $(window).load(function () {
 		  if( console && console.log ) {
 		    console.log("Sample of data:", firstYouTubeId);
 		  }
-		  ws.send(firstYouTubeId);
-		  $('#title').text(firstYouTubeTitle);
+		  ws.send(JSON.stringify({'id': firstYouTubeId}));
+		  $('#now_playing').text(firstYouTubeTitle);
 		});
 		console.log(searchBox.val());
 	});

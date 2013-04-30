@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"container/list"
 	"code.google.com/p/go.net/websocket"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"time"
+	"encoding/json"
 )
 
 type RoomView struct {
@@ -54,9 +56,12 @@ type Room struct {
 
 	// Remove a hose from the hoses pool
 	unregister chan *Hose
+
+	queue Queue
 }
 
 func (room *Room) Run() {
+	room.queue.AddItem(PlayableItem{"JXoAmDDPZz4"})
 	log.Println("Room is running")
 	for {
 		select {
@@ -70,6 +75,12 @@ func (room *Room) Run() {
 				hose.Close()
 			}
 		case broadcast_message := <-room.broadcast:
+			var p PlayableItem
+			if err := json.Unmarshal([]byte(broadcast_message), &p); err == nil {
+				room.queue.AddItem(p)
+			} else {
+				log.Println(err)
+			}
 			for hose := range room.hoses {
 				select {
 				case hose.send <- broadcast_message:
@@ -104,6 +115,27 @@ func (room *Room) Close() {
 	for hose := range room.hoses {
 		hose.Close()
 	}
+}
+
+type PlayableItem struct {
+	Id string
+}
+
+type Queue struct {
+	videos list.List
+}
+
+func (q *Queue) AddItem(item PlayableItem) {
+	q.videos.PushBack(item)
+}
+
+func (q *Queue) String() string {
+	s := ""
+	for e := q.videos.Front() ; e != nil ; e = e.Next() {
+		var p PlayableItem = e.Value.(PlayableItem)
+		s += ";" + p.Id
+	}
+	return s
 }
 
 type Hose struct {
@@ -174,9 +206,12 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 
 func roomHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path[1:]
-	room := &RoomView{Title: path}
+	room := headquarters.GetRoom("kimo")
+	
+
+	roomView := &RoomView{Title: path, Playing: room.queue.String()}
 	t, _ := template.ParseFiles("static/room.html")
-	t.Execute(w, room)
+	t.Execute(w, roomView)
 }
 
 func socketHandlerFunc(w http.ResponseWriter, r *http.Request) {
