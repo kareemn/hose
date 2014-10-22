@@ -68,6 +68,12 @@ func (room *Room) Run() {
 		case hose := <-room.register:
 			log.Println(hose, " registering for ", room)
 			room.hoses[hose] = true
+			go func() {
+				time.Sleep(5 * time.Second)
+				b, _ := json.Marshal(room.queue.GetPlayingItem())
+				log.Println("sent ", string(b), " to hose ", hose)
+				hose.send <- string(b)
+			}()
 		case hose := <-room.unregister:
 			log.Println(hose, " unregistering for ", room)
 			if room.hoses[hose] {
@@ -78,6 +84,7 @@ func (room *Room) Run() {
 			var p PlayableItem
 			if err := json.Unmarshal([]byte(broadcast_message), &p); err == nil {
 				room.queue.AddItem(p)
+				log.Println(room.queue.String())
 			} else {
 				log.Println(err)
 			}
@@ -125,6 +132,10 @@ type Queue struct {
 	videos list.List
 }
 
+func (q *Queue) GetPlayingItem() PlayableItem {
+	return q.videos.Back().Value.(PlayableItem)
+}
+
 func (q *Queue) AddItem(item PlayableItem) {
 	q.videos.PushBack(item)
 }
@@ -156,7 +167,7 @@ func (hose *Hose) Close() {
 }
 
 // Receive messages from websocket client.
-func (hose *Hose) drink() {
+func (hose *Hose) DrinkLoop() {
 	for {
 		if hose.closed {
 			break
@@ -173,7 +184,7 @@ func (hose *Hose) drink() {
 }
 
 // Send messages to websocket client.
-func (hose *Hose) pour() {
+func (hose *Hose) PourDownStream() {
 	for message := range hose.send {
 		if hose.closed {
 			break
@@ -237,11 +248,11 @@ func GetSocketRoomHandler(room_name string) func(c *websocket.Conn) {
 		room.register <- hose
 		defer func() { room.unregister <- hose }()
 		log.Println("About to start pouring")
-		go hose.pour()
+		go hose.PourDownStream()
 		// go hose.testBroadcast()
 
 		log.Println(hose, " is drinking")
-		hose.drink()
+		hose.DrinkLoop()
 	}
 }
 

@@ -48,7 +48,7 @@ function MainSocketLoop() {
      var ws = new WebSocket("ws://localhost:4000/socket/kimo");
      ws.onopen = function() {
         // Web Socket is connected, send data using send()
-        ws.send("Message to send");
+        // ws.send("Message to send");
         console.log("Message is sent...");
      };
      ws.onmessage = function (message) { 
@@ -56,7 +56,7 @@ function MainSocketLoop() {
         console.log("Message is received...");
 		console.log(payload);
 		object = JSON.parse(payload)
-		player.loadVideoById(object['id'])
+		player.loadVideoById(object['Id'])
      };
 
      ws.onclose = function() { 
