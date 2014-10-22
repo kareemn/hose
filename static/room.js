@@ -84,7 +84,7 @@ $(window).load(function () {
 		  if( console && console.log ) {
 		    console.log("Sample of data:", firstYouTubeId);
 		  }
-		  ws.send(JSON.stringify({'id': firstYouTubeId}));
+		  ws.send(JSON.stringify({'Id': firstYouTubeId}));
 		  $('#now_playing').text(firstYouTubeTitle);
 		});
 		console.log(searchBox.val());
