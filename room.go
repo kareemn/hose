@@ -37,8 +37,10 @@ func (room *Room) Run() {
 			go func() {
 				time.Sleep(5 * time.Second)
 				b, _ := json.Marshal(room.queue.GetPlayingItem())
-				log.Println("sent ", string(b), " to hose ", hose)
-				hose.send <- string(b)
+				if b != nil {
+					log.Println("sent ", string(b), " to hose ", hose)
+					hose.send <- string(b)
+				}
 			}()
 		case hose := <-room.unregister:
 			log.Println(hose, " unregistering for ", room)

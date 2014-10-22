@@ -11,6 +11,7 @@ function onYouTubeIframeAPIReady() {
   player = new YT.Player('player', {
     height: '390',
     width: '640',
+    playerVars: { 'autoplay': 1, 'controls': 0 },
     videoId: 'M7lc1UVf-VE',
     events: {
       'onReady': onPlayerReady,
@@ -56,7 +57,7 @@ function MainSocketLoop() {
         console.log("Message is received...");
 		console.log(payload);
 		object = JSON.parse(payload)
-		player.loadVideoById(object['Id'])
+		player.loadVideoById(object['id'])
      };
 
      ws.onclose = function() { 
@@ -84,7 +85,7 @@ $(window).load(function () {
 		  if( console && console.log ) {
 		    console.log("Sample of data:", firstYouTubeId);
 		  }
-		  ws.send(JSON.stringify({'Id': firstYouTubeId}));
+		  ws.send(JSON.stringify({'id': firstYouTubeId}));
 		  $('#now_playing').text(firstYouTubeTitle);
 		});
 		console.log(searchBox.val());

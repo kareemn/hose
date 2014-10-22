@@ -2,10 +2,16 @@ package main
 
 import (
 	"container/list"
+	// "time"
 )
 
 type PlayableItem struct {
-	Id string
+	// The YouTube id of this item.
+	// TODO(kanassar): Make it such that this doesn't just represent a YouTube id.
+	// Exported fields are always capitalized
+	Id string `json:"id"`
+	// Time that the item was started
+	// start time.Time
 }
 
 type Queue struct {
