@@ -2,6 +2,8 @@ Install Go
 ====
 http://golang.org/doc/install
 
+go get code.google.com/p/go.net/websocket
+
 Run Hose server
 =====
 go build server.go
