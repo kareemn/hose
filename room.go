@@ -51,6 +51,7 @@ func (room *Room) Run() {
 		case broadcast_message := <-room.broadcast:
 			var p PlayableItem
 			if err := json.Unmarshal([]byte(broadcast_message), &p); err == nil {
+				p.Start = time.Now().Unix()
 				room.queue.AddItem(p)
 				log.Println(room.queue.String())
 			} else {
