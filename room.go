@@ -35,7 +35,7 @@ func (room *Room) Run() {
 			log.Println(hose, " registering for ", room)
 			room.hoses[hose] = true
 			go func() {
-				time.Sleep(5 * time.Second)
+				time.Sleep(1 * time.Second)
 				b, _ := json.Marshal(room.queue.GetPlayingItem())
 				if b != nil {
 					log.Println("sent ", string(b), " to hose ", hose)
@@ -57,17 +57,21 @@ func (room *Room) Run() {
 			} else {
 				log.Println(err)
 			}
-			for hose := range room.hoses {
-				select {
-				case hose.send <- broadcast_message:
-					// do something
-					log.Println("Sent broadcast message", broadcast_message, " to hose: ", hose)
-				default:
-					log.Println("This hose hasn't picked up messages from it's buffer")
-					delete(room.hoses, hose)
-					hose.Close()
+			b, _ := json.Marshal(p)
+			if b != nil {
+				for hose := range room.hoses {
+					select {
+					case hose.send <- string(b):
+						// do something
+						log.Println("Sent broadcast message", broadcast_message, " to hose: ", hose)
+					default:
+						log.Println("This hose hasn't picked up messages from it's buffer")
+						delete(room.hoses, hose)
+						hose.Close()
+					}
 				}
 			}
+
 		}
 	}
 }

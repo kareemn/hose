@@ -47,10 +47,33 @@ function stopVideo() {
   player.stopVideo();
 }
 
-function MainSocketLoop() {
-  if (!Date.now) {
+if (!Date.now) {
 	Date.now = function() { return new Date().getTime(); };
-  }
+}
+
+var video_id = "";
+var t = 0;
+
+window.setInterval(function () {
+	console.log("sync interval");
+	var current_video_time = player.getCurrentTime();
+	var current_time = Date.now() / 1000;
+	var delta_time = current_time - t;
+	console.log("player is at: " + current_video_time +
+	            "\n should be at: " + delta_time);
+	console.log("available playback: "+ player.getAvailablePlaybackRates());
+	if (delta_time - current_video_time > 0.4) {
+		console.log("too far behind");
+		player.seekTo(delta_time + 1, true);
+	} else if (current_video_time - delta_time > 0.4) {
+		console.log("too far ahead");
+		player.seekTo(delta_time , true);
+	}
+	
+}, 10000);
+
+function MainSocketLoop() {
+
   if ("WebSocket" in window) {
      console.log("WebSocket is supported by your Browser!");
 
@@ -70,6 +93,8 @@ function MainSocketLoop() {
 		var current_time = Date.now() / 1000;
 		console.log("Current time: " + current_time);
 		var start_time = object['start'];
+		t = start_time;
+		video_id = object['id'];
 		var delta_time = current_time - start_time;
 		console.log("Delta time: " + delta_time);
 		//player.seekTo(delta_time, true);
