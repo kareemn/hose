@@ -2,7 +2,6 @@ package main
 
 import (
 	"container/list"
-	// "time"
 )
 
 type PlayableItem struct {
@@ -11,7 +10,7 @@ type PlayableItem struct {
 	// Exported fields are always capitalized
 	Id string `json:"id"`
 	// Time that the item was started
-	// start time.Time
+	Start int64 `json:"start"`
 }
 
 type Queue struct {

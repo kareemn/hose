@@ -27,7 +27,7 @@ type Room struct {
 }
 
 func (room *Room) Run() {
-	room.queue.AddItem(PlayableItem{"JXoAmDDPZz4"})
+	room.queue.AddItem(PlayableItem{"JXoAmDDPZz4", time.Now().Unix()})
 	log.Println("Room is running")
 	for {
 		select {

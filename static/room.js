@@ -48,6 +48,9 @@ function stopVideo() {
 }
 
 function MainSocketLoop() {
+  if (!Date.now) {
+	Date.now = function() { return new Date().getTime(); };
+  }
   if ("WebSocket" in window) {
      console.log("WebSocket is supported by your Browser!");
 
@@ -63,7 +66,14 @@ function MainSocketLoop() {
         console.log("Message is received...");
 		console.log(payload);
 		object = JSON.parse(payload)
-		player.loadVideoById(object['id'])
+		
+		var current_time = Date.now() / 1000;
+		console.log("Current time: " + current_time);
+		var start_time = object['start'];
+		var delta_time = current_time - start_time;
+		console.log("Delta time: " + delta_time);
+		//player.seekTo(delta_time, true);
+		player.loadVideoById({'videoId': object['id'], 'startSeconds': delta_time});
      };
 
      ws.onclose = function() { 
