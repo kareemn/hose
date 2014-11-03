@@ -1,7 +1,7 @@
 Install Go
 ====
 http://golang.org/doc/install
-
+download mercurial.
 go get code.google.com/p/go.net/websocket
 
 Run Hose server
