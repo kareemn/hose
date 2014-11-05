@@ -53,24 +53,49 @@ if (!Date.now) {
 
 var video_id = "";
 var t = 0;
+var i = 0;
+var jumpedTooFarForward = false;
+var jumpedTooFarBack = false;
+var numLoops = 0;
+var dampen = 0.1;
 
 window.setInterval(function () {
-	console.log("sync interval");
+	console.log("sync interval start time: " + t);
 	var current_video_time = player.getCurrentTime();
 	var current_time = Date.now() / 1000;
 	var delta_time = current_time - t;
+        console.log("current time: " + current_time);
 	console.log("player is at: " + current_video_time +
 	            "\n should be at: " + delta_time);
 	console.log("available playback: "+ player.getAvailablePlaybackRates());
-	if (delta_time - current_video_time > 0.4) {
+	if (delta_time - current_video_time > 0.05) {
 		console.log("too far behind");
-		player.seekTo(delta_time + 1, true);
-	} else if (current_video_time - delta_time > 0.4) {
+                jumpedTooFarBehind = true;
+                if (jumpedTooFarBehind && jumpedTooFarForward) {
+                   numLoops++;
+                } else {
+                   numLoops = 0;
+                }
+                jumpedTooFarForward = false;
+		player.seekTo(delta_time + 1 - dampen*numLoops, true);
+	} else if (current_video_time - delta_time > 0.05) {
 		console.log("too far ahead");
-		player.seekTo(delta_time , true);
-	}
+                jumpedTooFarForward = true;
+                if (jumpedTooFarBehind && jumpedTooFarForward) {
+                   numLoops++;
+                } else {
+                   numLoops = 0;
+                }
+                jumpedTooFarBehind = false;
+		player.seekTo(delta_time + dampen*numLoops, true);
+	} else {
+               jumpedTooFarBehind = false;
+               jumpedTooFarAhead = false;
+               numLoops = 0;
+        }
+        i++;
 	
-}, 10000);
+}, 3000);
 
 function MainSocketLoop() {
 
@@ -78,7 +103,7 @@ function MainSocketLoop() {
      console.log("WebSocket is supported by your Browser!");
 
      // Let us open a web socket
-     var ws = new WebSocket("ws://localhost:4000/socket/kimo");
+     var ws = new WebSocket("ws://23.251.148.249/socket/kimo");
      ws.onopen = function() {
         // Web Socket is connected, send data using send()
         // ws.send("Message to send");
