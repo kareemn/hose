@@ -58,6 +58,9 @@ var jumpedTooFarForward = false;
 var jumpedTooFarBack = false;
 var numLoops = 0;
 var dampen = 0.1;
+var acceptable_window = 0.5;
+var largest_window = 2.0;
+var smallest_window = 0.4;
 
 window.setInterval(function () {
 	console.log("sync interval start time: " + t);
@@ -68,7 +71,7 @@ window.setInterval(function () {
 	console.log("player is at: " + current_video_time +
 	            "\n should be at: " + delta_time);
 	console.log("available playback: "+ player.getAvailablePlaybackRates());
-	if (delta_time - current_video_time > 0.05) {
+	if (delta_time - current_video_time > acceptable_window) {
 		console.log("too far behind");
                 jumpedTooFarBehind = true;
                 if (jumpedTooFarBehind && jumpedTooFarForward) {
@@ -78,7 +81,11 @@ window.setInterval(function () {
                 }
                 jumpedTooFarForward = false;
 		player.seekTo(delta_time + 1 - dampen*numLoops, true);
-	} else if (current_video_time - delta_time > 0.05) {
+                acceptable_window = 1.3*acceptable_window;
+                if (acceptable_window > largest_window) {
+                    acceptable_window = largest_window;
+                }
+	} else if (current_video_time - delta_time > acceptable_window) {
 		console.log("too far ahead");
                 jumpedTooFarForward = true;
                 if (jumpedTooFarBehind && jumpedTooFarForward) {
@@ -88,14 +95,22 @@ window.setInterval(function () {
                 }
                 jumpedTooFarBehind = false;
 		player.seekTo(delta_time + dampen*numLoops, true);
+                acceptable_window = 1.3*acceptable_window;
+                if (acceptable_window > largest_window) {
+                    acceptable_window = largest_window;
+                }
 	} else {
                jumpedTooFarBehind = false;
                jumpedTooFarAhead = false;
                numLoops = 0;
+               acceptable_window = 0.9*acceptable_window;
+               if (acceptable_window < smallest_window) {
+                  acceptable_window = smallest_window;
+               }
         }
         i++;
 	
-}, 3000);
+}, 1000);
 
 function MainSocketLoop() {
 
