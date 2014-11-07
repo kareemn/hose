@@ -12,7 +12,7 @@ function onYouTubeIframeAPIReady() {
     height: '100%',
     width: '100%',
     playerVars: {
-       autoplay: 1,
+       autoplay: 0,
        controls: 0,
        showinfo: 0,
        modestbranding: 1,

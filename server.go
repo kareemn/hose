@@ -46,7 +46,7 @@ func main() {
 	http.HandleFunc("/"+socket_path+"/", socketHandlerFunc)
 	http.Handle("/static/", http.FileServer(http.Dir("")))
 	http.HandleFunc("/", roomHandler)
-	log.Fatal(http.ListenAndServe(":80", nil))
+	log.Fatal(http.ListenAndServe(":4000", nil))
 }
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
