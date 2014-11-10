@@ -36,12 +36,6 @@ function onPlayerReady(event) {
 var done = false;
 function onPlayerStateChange(event) {
   console.log("onPlayerStateChange");
-/*
-  if (event.data == YT.PlayerState.PLAYING && !done) {
-    setTimeout(stopVideo, 6000);
-    done = true;
-  }
-*/
 }
 function stopVideo() {
   player.stopVideo();
@@ -58,21 +52,21 @@ var jumpedTooFarForward = false;
 var jumpedTooFarBack = false;
 var numLoops = 0;
 var dampen = 0.1;
-var acceptable_window = 0.5;
+var acceptable_window = 0.9;
 var largest_window = 2.0;
-var smallest_window = 0.4;
+var smallest_window = 0.5;
 
 window.setInterval(function () {
-	console.log("sync interval start time: " + t);
+	// console.log("sync interval start time: " + t);
 	var current_video_time = player.getCurrentTime();
 	var current_time = Date.now() / 1000;
 	var delta_time = current_time - t;
-        console.log("current time: " + current_time);
-	console.log("player is at: " + current_video_time +
-	            "\n should be at: " + delta_time);
-	console.log("available playback: "+ player.getAvailablePlaybackRates());
+    //  console.log("current time: " + current_time);
+	//  console.log("player is at: " + current_video_time +
+	//            "\n should be at: " + delta_time);
+	// console.log("available playback: "+ player.getAvailablePlaybackRates());
 	if (delta_time - current_video_time > acceptable_window) {
-		console.log("too far behind");
+		// console.log("too far behind");
                 jumpedTooFarBehind = true;
                 if (jumpedTooFarBehind && jumpedTooFarForward) {
                    numLoops++;
@@ -86,7 +80,7 @@ window.setInterval(function () {
                     acceptable_window = largest_window;
                 }
 	} else if (current_video_time - delta_time > acceptable_window) {
-		console.log("too far ahead");
+		// console.log("too far ahead");
                 jumpedTooFarForward = true;
                 if (jumpedTooFarBehind && jumpedTooFarForward) {
                    numLoops++;
