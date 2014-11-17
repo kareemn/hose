@@ -112,7 +112,7 @@ function MainSocketLoop() {
      console.log("WebSocket is supported by your Browser!");
 
      // Let us open a web socket
-     var ws = new WebSocket("ws://23.251.148.249/socket/kimo");
+     var ws = new WebSocket("ws://localhost:4000/socket/kimo");
      ws.onopen = function() {
         // Web Socket is connected, send data using send()
         // ws.send("Message to send");
@@ -132,7 +132,9 @@ function MainSocketLoop() {
 		var delta_time = current_time - start_time;
 		console.log("Delta time: " + delta_time);
 		//player.seekTo(delta_time, true);
-		player.loadVideoById({'videoId': object['id'], 'startSeconds': delta_time});
+		if (player) {
+			player.loadVideoById({'videoId': object['id'], 'startSeconds': delta_time});
+		}
      };
 
      ws.onclose = function() { 

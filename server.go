@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "net/http/pprof"
 	"code.google.com/p/go.net/websocket"
 	"fmt"
 	"html/template"
@@ -27,10 +28,14 @@ func (hq *HeadQuarters) GetRoom(name string) *Room {
 	if room == nil {
 		room = &Room{
 			name:       name,
-			broadcast:  make(chan string),
-			register:   make(chan *Hose),
-			unregister: make(chan *Hose),
-			hoses:      make(map[*Hose]bool),
+			youtubebroadcast:  make(chan interface{}),
+			audiobroadcast:  make(chan interface{}),
+			youtubehoses:      make(map[*Hose]bool),
+			youtuberegister:   make(chan *Hose),
+			youtubeunregister: make(chan *Hose),
+			audiohoses:      make(map[*Hose]bool),
+			audioregister:   make(chan *Hose),
+			audiounregister: make(chan *Hose),
 		}
 		log.Println("Headquarters adding room: ", room)
 		hq.rooms[name] = room
@@ -41,9 +46,11 @@ func (hq *HeadQuarters) GetRoom(name string) *Room {
 
 
 var socket_path = "socket"
+var audio_path = "audio"
 
 func main() {
 	http.HandleFunc("/"+socket_path+"/", socketHandlerFunc)
+	http.HandleFunc("/"+audio_path+"/", audioHandlerFunc)
 	http.Handle("/static/", http.FileServer(http.Dir("")))
 	http.HandleFunc("/", roomHandler)
 	log.Fatal(http.ListenAndServe(":4000", nil))
@@ -69,27 +76,54 @@ func socketHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	websocket.Handler(GetSocketRoomHandler(socket_room_name)).ServeHTTP(w, r)
 }
 
+func audioHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	audio_room_name := r.URL.Path[len(audio_path)+2:]
+	log.Println(audio_room_name)
+	websocket.Handler(GetAudioRoomHandler(audio_room_name)).ServeHTTP(w, r)
+}
+
 var id = 0
 
 func GetSocketRoomHandler(room_name string) func(c *websocket.Conn) {
 	room := headquarters.GetRoom(room_name)
 	return func(c *websocket.Conn) {
-		hose := &Hose{
+		hose := &Hose {
 			name:   fmt.Sprintf("hose%d", id),
 			client: c,
-			send:   make(chan string, 256),
-			room:   room,
+			send:   make(chan interface{}, 256),
+			roombroadcast:   room.youtubebroadcast,
 			closed: false,
 		}
 		id++
-		log.Println("About to register ", hose, " to ", room)
-		room.register <- hose
-		defer func() { room.unregister <- hose }()
-		log.Println("About to start pouring")
+		log.Println("About to register youtube", hose, " to ", room)
+		room.youtuberegister <- hose
+		defer func() { room.youtubeunregister <- hose }()
 		go hose.PourDownStream()
 		// go hose.testBroadcast()
 
-		log.Println(hose, " is drinking")
+		log.Println("youtube ", hose, " is drinking")
+		hose.DrinkLoop()
+	}
+}
+
+func GetAudioRoomHandler(room_name string) func(c *websocket.Conn) {
+	room := headquarters.GetRoom(room_name)
+	return func(c *websocket.Conn) {
+		hose := &Hose{
+			name:   fmt.Sprintf("hose%d", id),
+			client: c,
+			send:   make(chan interface{}, 256),
+			roombroadcast:   room.audiobroadcast,
+			closed: false,
+		}
+		id++
+		log.Println("About to register audio", hose, " to ", room)
+		room.audioregister <- hose
+		defer func() { room.audiounregister <- hose }()
+		go hose.PourDownStream()
+		// go hose.testBroadcast()
+
+		log.Println("audio ", hose, " is drinking")
 		hose.DrinkLoop()
 	}
 }

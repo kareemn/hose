@@ -11,9 +11,10 @@ type Hose struct {
 	closed bool
 	client *websocket.Conn
 	// Send messages to this channel to send them along to the websocket.
-	send chan string
+	send chan interface{}
 
-	room *Room
+    // Send messages to this channel to broadcast to entire room.
+	roombroadcast chan interface{}
 }
 
 func (hose *Hose) Close() {
@@ -21,23 +22,6 @@ func (hose *Hose) Close() {
 	close(hose.send)
 	hose.client.Close()
 	hose.closed = true
-}
-
-// Receive messages from websocket client.
-func (hose *Hose) DrinkLoop() {
-	for {
-		if hose.closed {
-			break
-		}
-		var message string
-		err := websocket.Message.Receive(hose.client, &message)
-		if err != nil {
-			log.Println("Error ", err, "for ", hose, "Stop drinking.")
-			break
-		}
-		log.Println("received message from ", hose, " ", message)
-		hose.room.broadcast <- message
-	}
 }
 
 // Send messages to websocket client.
@@ -57,4 +41,25 @@ func (hose *Hose) PourDownStream() {
 
 func (hose *Hose) String() string {
 	return fmt.Sprintf("%s", hose.name)
+}
+
+// Receive messages from websocket client.
+func (hose *Hose) DrinkLoop() {
+	if hose.roombroadcast == nil {
+		log.Fatal("No room broadcast set for drink loop")
+		return
+	}
+
+	for {
+		if hose.closed {
+			break
+		}
+		var message []byte
+		err := websocket.Message.Receive(hose.client, &message)
+		if err != nil {
+			log.Println("Error ", err, "for ", hose, "Stop drinking.")
+			break
+		}
+		hose.roombroadcast <- message
+	}
 }

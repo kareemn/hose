@@ -11,29 +11,58 @@ import (
 type Room struct {
 	name string
 
-	// All connected hoses for this room
-	hoses map[*Hose]bool
+	// All connected youtube hoses for this room
+	youtubehoses map[*Hose]bool
 
-	// Send messages to this channel to braodcast to all hoses.
-	broadcast chan string
+	// All connected audio hoses for this room
+	audiohoses map[*Hose]bool
+
+	// Send messages to this channel to braodcast to all youtube hoses.
+	youtubebroadcast chan interface{}
+
+	// Send messages to this channel to braodcast to all audio hoses.
+	audiobroadcast chan interface{}
 
 	// Add a hose to the hoses pool.
-	register chan *Hose
+	youtuberegister chan *Hose
 
 	// Remove a hose from the hoses pool
-	unregister chan *Hose
+	youtubeunregister chan *Hose
 
 	queue Queue
+
+	// Add a hose to the hoses pool.
+	audioregister chan *Hose
+
+	// Remove a hose from the hoses pool
+	audiounregister chan *Hose
 }
+
 
 func (room *Room) Run() {
 	room.queue.AddItem(PlayableItem{"JXoAmDDPZz4", time.Now().Unix()})
 	log.Println("Room is running")
 	for {
 		select {
-		case hose := <-room.register:
-			log.Println(hose, " registering for ", room)
-			room.hoses[hose] = true
+		case hose := <-room.audioregister:
+			log.Println(hose, " audio registering for ", room)
+			room.audiohoses[hose] = true
+		case hose := <-room.audiounregister:
+			log.Println(hose, " audio unregistering for ", room)
+			if room.audiohoses[hose] {
+				delete(room.audiohoses, hose)
+				hose.Close()
+			}
+		case pcm_broadcast := <-room.audiobroadcast:
+			log.Println("received pcm_broadcast", len(pcm_broadcast.([]byte)) )
+			for hose := range room.audiohoses {
+			//	go func() {
+				hose.send <- pcm_broadcast
+			//	}
+			}
+		case hose := <-room.youtuberegister:
+			log.Println(hose, " youtube registering for ", room)
+			room.youtubehoses[hose] = true
 			go func() {
 				time.Sleep(1 * time.Second)
 				b, _ := json.Marshal(room.queue.GetPlayingItem())
@@ -42,15 +71,15 @@ func (room *Room) Run() {
 					hose.send <- string(b)
 				}
 			}()
-		case hose := <-room.unregister:
-			log.Println(hose, " unregistering for ", room)
-			if room.hoses[hose] {
-				delete(room.hoses, hose)
+		case hose := <-room.youtubeunregister:
+			log.Println(hose, " youtube unregistering for ", room)
+			if room.youtubehoses[hose] {
+				delete(room.youtubehoses, hose)
 				hose.Close()
 			}
-		case broadcast_message := <-room.broadcast:
+		case broadcast_message := <-room.youtubebroadcast:
 			var p PlayableItem
-			if err := json.Unmarshal([]byte(broadcast_message), &p); err == nil {
+			if err := json.Unmarshal([]byte(broadcast_message.(string)), &p); err == nil {
 				p.Start = time.Now().Unix()
 				room.queue.AddItem(p)
 				log.Println(room.queue.String())
@@ -59,19 +88,18 @@ func (room *Room) Run() {
 			}
 			b, _ := json.Marshal(p)
 			if b != nil {
-				for hose := range room.hoses {
-					select {
-					case hose.send <- string(b):
-						// do something
-						log.Println("Sent broadcast message", broadcast_message, " to hose: ", hose)
-					default:
-						log.Println("This hose hasn't picked up messages from it's buffer")
-						delete(room.hoses, hose)
-						hose.Close()
-					}
+				for hose := range room.youtubehoses {
+						select {
+						case hose.send <- string(b):
+							// do something
+							log.Println("Sent broadcast message", broadcast_message, " to hose: ", hose)
+						default:
+							log.Println("This hose hasn't picked up messages from it's buffer")
+							delete(room.youtubehoses, hose)
+							hose.Close()
+						}
 				}
 			}
-
 		}
 	}
 }
@@ -79,8 +107,12 @@ func (room *Room) Run() {
 func (room *Room) HosesString() string {
 	var buffer bytes.Buffer
 	buffer.WriteString("Hoses<\n")
-	for hose := range room.hoses {
-		buffer.WriteString(hose.String())
+	for hose := range room.youtubehoses {
+		buffer.WriteString("youtube " + hose.String())
+		buffer.WriteString("\n")
+	}
+	for hose := range room.audiohoses {
+		buffer.WriteString("audio " + hose.String())
 		buffer.WriteString("\n")
 	}
 	buffer.WriteString(">")
@@ -92,7 +124,10 @@ func (room *Room) String() string {
 }
 
 func (room *Room) Close() {
-	for hose := range room.hoses {
+	for hose := range room.youtubehoses {
+		hose.Close()
+	}
+	for hose := range room.audiohoses {
 		hose.Close()
 	}
 }
