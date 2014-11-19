@@ -90,10 +90,13 @@ function recorderProcess(e) {
   window.Stream.send(left);
 }
 
+var audioContext = new window.AudioContext();
+var audioNode = audioContext.createScriptProcessor(4096, 1, 1);
+
 function initPlayback() {
-	var audioContext = new window.AudioContext();
-	var audioNode = audioContext.createScriptProcessor(4096, 1, 1);
+
 	audioNode.onaudioprocess = function(event) {
+		console.log("audioNode");
         if (decodedAudioBuffer.length >= bufferSize) {
 	           if (decodedAudioBuffer === undefined) {
 		  	       return;
@@ -112,18 +115,16 @@ function initPlayback() {
 function initAudio(stream) {
 	initPlayback();
 
-	var audioContext = window.AudioContext;
-	var context = new audioContext();
-	var audioInput = context.createMediaStreamSource(stream);
+	var audioInput = audioContext.createMediaStreamSource(stream);
 	var bufferSize = 2048;
 	// create a javascript node
-	var recorder = context.createScriptProcessor(bufferSize, 1, 1);
+	var recorder = audioContext.createScriptProcessor(bufferSize, 1, 1);
 	// specify the processing function
 	recorder.onaudioprocess = recorderProcess;
 	// connect stream to our recorder
 	audioInput.connect(recorder);
 	// connect our recorder to the previous destination
-	recorder.connect(context.destination);
+	recorder.connect(audioContext.destination);
 	
 }
 
