@@ -1,5 +1,4 @@
-![alt tag](https://travis-ci.org/kanassar/hose.svg?branch=master)
-
+[![Build Status](https://travis-ci.org/kanassar/hose.svg?branch=master)](https://travis-ci.org/kanassar/hose)
 Install Go
 ====
 http://golang.org/doc/install
