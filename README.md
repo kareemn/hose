@@ -1,3 +1,5 @@
+![alt tag](https://travis-ci.org/kanassar/hose.svg?branch=master)
+
 Install Go
 ====
 http://golang.org/doc/install
