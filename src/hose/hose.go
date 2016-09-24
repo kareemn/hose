@@ -1,8 +1,8 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
 	"fmt"
+	"golang.org/x/net/websocket"
 	"log"
 )
 
@@ -13,8 +13,8 @@ type Hose struct {
 	// Send messages to this channel to send them along to the websocket.
 	send chan interface{}
 
-    // Send messages to this channel to broadcast to entire room.
-	roombroadcast chan interface{}
+	// Send messages to this channel to broadcast to entire room.
+	roombroadcast chan []byte
 }
 
 func (hose *Hose) Close() {
@@ -60,6 +60,7 @@ func (hose *Hose) DrinkLoop() {
 			log.Println("Error ", err, "for ", hose, "Stop drinking.")
 			break
 		}
+		log.Println(message)
 		hose.roombroadcast <- message
 	}
 }

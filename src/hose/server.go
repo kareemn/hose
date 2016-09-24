@@ -1,12 +1,12 @@
 package main
 
 import (
-	_ "net/http/pprof"
-	"code.google.com/p/go.net/websocket"
 	"fmt"
+	"golang.org/x/net/websocket"
 	"html/template"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 )
 
@@ -27,15 +27,15 @@ func (hq *HeadQuarters) GetRoom(name string) *Room {
 	room := hq.rooms[name]
 	if room == nil {
 		room = &Room{
-			name:       name,
-			youtubebroadcast:  make(chan interface{}),
-			audiobroadcast:  make(chan interface{}),
+			name:              name,
+			youtubebroadcast:  make(chan []byte),
+			audiobroadcast:    make(chan []byte),
 			youtubehoses:      make(map[*Hose]bool),
 			youtuberegister:   make(chan *Hose),
 			youtubeunregister: make(chan *Hose),
-			audiohoses:      make(map[*Hose]bool),
-			audioregister:   make(chan *Hose),
-			audiounregister: make(chan *Hose),
+			audiohoses:        make(map[*Hose]bool),
+			audioregister:     make(chan *Hose),
+			audiounregister:   make(chan *Hose),
 		}
 		log.Println("Headquarters adding room: ", room)
 		hq.rooms[name] = room
@@ -43,7 +43,6 @@ func (hq *HeadQuarters) GetRoom(name string) *Room {
 	}
 	return room
 }
-
 
 var socket_path = "socket"
 var audio_path = "audio"
@@ -63,7 +62,6 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 func roomHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path[1:]
 	room := headquarters.GetRoom("kimo")
-	
 
 	roomView := &RoomView{Title: path, Playing: room.queue.String()}
 	t, _ := template.ParseFiles("static/room.html")
@@ -87,12 +85,12 @@ var id = 0
 func GetSocketRoomHandler(room_name string) func(c *websocket.Conn) {
 	room := headquarters.GetRoom(room_name)
 	return func(c *websocket.Conn) {
-		hose := &Hose {
-			name:   fmt.Sprintf("hose%d", id),
-			client: c,
-			send:   make(chan interface{}, 256),
-			roombroadcast:   room.youtubebroadcast,
-			closed: false,
+		hose := &Hose{
+			name:          fmt.Sprintf("hose%d", id),
+			client:        c,
+			send:          make(chan interface{}, 256),
+			roombroadcast: room.youtubebroadcast,
+			closed:        false,
 		}
 		id++
 		log.Println("About to register youtube", hose, " to ", room)
@@ -110,11 +108,11 @@ func GetAudioRoomHandler(room_name string) func(c *websocket.Conn) {
 	room := headquarters.GetRoom(room_name)
 	return func(c *websocket.Conn) {
 		hose := &Hose{
-			name:   fmt.Sprintf("hose%d", id),
-			client: c,
-			send:   make(chan interface{}, 256),
-			roombroadcast:   room.audiobroadcast,
-			closed: false,
+			name:          fmt.Sprintf("hose%d", id),
+			client:        c,
+			send:          make(chan interface{}, 256),
+			roombroadcast: room.audiobroadcast,
+			closed:        false,
 		}
 		id++
 		log.Println("About to register audio", hose, " to ", room)

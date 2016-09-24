@@ -2,10 +2,10 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
-	"encoding/json"
 )
 
 type Room struct {
@@ -18,10 +18,10 @@ type Room struct {
 	audiohoses map[*Hose]bool
 
 	// Send messages to this channel to braodcast to all youtube hoses.
-	youtubebroadcast chan interface{}
+	youtubebroadcast chan []byte
 
 	// Send messages to this channel to braodcast to all audio hoses.
-	audiobroadcast chan interface{}
+	audiobroadcast chan []byte
 
 	// Add a hose to the hoses pool.
 	youtuberegister chan *Hose
@@ -38,6 +38,10 @@ type Room struct {
 	audiounregister chan *Hose
 }
 
+type ConversationItem struct {
+	Id         string `json:"id"`
+	Transcript string `json:"transcript"`
+}
 
 func (room *Room) Run() {
 	room.queue.AddItem(PlayableItem{"JXoAmDDPZz4", time.Now().Unix()})
@@ -54,18 +58,21 @@ func (room *Room) Run() {
 				hose.Close()
 			}
 		case pcm_broadcast := <-room.audiobroadcast:
-			log.Println("received pcm_broadcast", len(pcm_broadcast.([]byte)) )
+			log.Println("received pcm_broadcast", len(pcm_broadcast))
 			for hose := range room.audiohoses {
-			//	go func() {
+				//	go func() {
 				hose.send <- pcm_broadcast
-			//	}
+				//	}
 			}
 		case hose := <-room.youtuberegister:
-			log.Println(hose, " youtube registering for ", room)
+			log.Println(hose, " conversation registering for ", room)
 			room.youtubehoses[hose] = true
 			go func() {
 				time.Sleep(1 * time.Second)
-				b, _ := json.Marshal(room.queue.GetPlayingItem())
+				b, _ := json.Marshal(ConversationItem{
+					Id:         "yolo2",
+					Transcript: "holla",
+				})
 				if b != nil {
 					log.Println("sent ", string(b), " to hose ", hose)
 					hose.send <- string(b)
@@ -78,17 +85,13 @@ func (room *Room) Run() {
 				hose.Close()
 			}
 		case broadcast_message := <-room.youtubebroadcast:
-			var p PlayableItem
-			if err := json.Unmarshal([]byte(broadcast_message.(string)), &p); err == nil {
-				p.Start = time.Now().Unix()
-				room.queue.AddItem(p)
-				log.Println(room.queue.String())
-			} else {
-				log.Println(err)
-			}
-			b, _ := json.Marshal(p)
-			if b != nil {
-				for hose := range room.youtubehoses {
+			log.Println("Broadcast message is a []byte", broadcast_message)
+			var c ConversationItem
+			if err := json.Unmarshal(broadcast_message, &c); err == nil {
+				log.Printf("%+v\n", c)
+				b, _ := json.Marshal(c)
+				if b != nil {
+					for hose := range room.youtubehoses {
 						select {
 						case hose.send <- string(b):
 							// do something
@@ -98,7 +101,10 @@ func (room *Room) Run() {
 							delete(room.youtubehoses, hose)
 							hose.Close()
 						}
+					}
 				}
+			} else {
+				log.Println(err)
 			}
 		}
 	}

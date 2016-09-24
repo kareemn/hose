@@ -73,7 +73,47 @@ function gotStream(stream) {
 }
 
 function init() {
-    getUserMedia({audio:true}, gotStream);
+    // getUserMedia({audio:true}, gotStream);
+
+    var create_email = false;
+    var final_transcript = '';
+    var recognizing = false;
+    var ignore_onend;
+    var start_timestamp;
+    if (!('webkitSpeechRecognition' in window)) {
+      console.log("No webkitSpeechRecognition");
+    } else {
+      var recognition = new webkitSpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onstart = function() {
+        recognizing = true;
+        console.log("on start recognizing");
+      };
+      recognition.onerror = function(event) {
+         console.log("onerror recognizing");
+      };
+      recognition.onend = function() {
+        recognizing = false;
+        if (ignore_onend) {
+          return;
+        }
+        console.log("onend recognizing");
+      };
+      recognition.onresult = function(event) {
+        var interim_transcript = '';
+        for (var i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            final_transcript += event.results[i][0].transcript;
+          } else {
+            interim_transcript += event.results[i][0].transcript;
+          }
+        }
+        console.log(final_transcript);
+        console.log(interim_transcript);
+      };
+    }
+    recognition.start();
 }
 
 function convertFloat32ToInt16(buffer) {
